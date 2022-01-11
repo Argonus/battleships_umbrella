@@ -20,7 +20,7 @@ defmodule Battleships.Game.BoardRepository do
     GenServer.call(__MODULE__, {:add_board, board})
   end
 
-  @spec add_board(Board.t()) :: {:ok, Board.t()} | {:error, :not_found}
+  @spec update_board(Board.t()) :: {:ok, Board.t()} | {:error, :not_found}
   def update_board(board) do
     GenServer.call(__MODULE__, {:update_board, board})
   end

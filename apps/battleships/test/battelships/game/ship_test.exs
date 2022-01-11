@@ -37,4 +37,18 @@ defmodule Battleships.Game.ShipTest do
       end
     end
   end
+
+  describe "coords/1" do
+    test "returns list of coords for vertical ship" do
+      ship = Ship.init(0, 0, 2, :vertical)
+
+      assert [{0, 0}, {1, 0}] == Ship.coords(ship)
+    end
+
+    test "returns list of coords for horizontal ship" do
+      ship = Ship.init(0, 0, 2, :horizontal)
+
+      assert [{0, 0}, {0, 1}] == Ship.coords(ship)
+    end
+  end
 end

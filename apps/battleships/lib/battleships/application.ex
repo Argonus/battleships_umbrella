@@ -8,7 +8,7 @@ defmodule Battleships.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Battleships.Game.BoardRepository,
+      Battleships.Game.Supervisor,
       {Phoenix.PubSub, name: Battleships.PubSub}
     ]
 
