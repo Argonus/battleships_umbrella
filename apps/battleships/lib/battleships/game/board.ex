@@ -3,21 +3,25 @@ defmodule Battleships.Game.Board do
   Game Board
   """
 
+  alias Battleships.Game
   alias Battleships.Game.Ship
 
   defmodule Grid do
     @moduledoc """
     Game Board grid
     """
+
+    alias Battleships.Game
     alias Battleships.Game.Ship
 
     @water_value "."
     @ship_value ">"
+    @hit_value "*"
+    @miss_value "0"
 
     defstruct [:coords]
 
     @type t :: %__MODULE__{coords: map}
-    @type coords :: {non_neg_integer, non_neg_integer}
 
     @spec init(integer) :: __MODULE__.t()
     def init(size) do
@@ -31,19 +35,33 @@ defmodule Battleships.Game.Board do
       %__MODULE__{coords: coords}
     end
 
-    @spec mark_coords(__MODULE__.t(), [coords], :ship) :: __MODULE__.t()
-    def mark_coords(grid = %__MODULE__{coords: grid_coords}, coords, :ship) do
-      new_grid_coords =
-        Enum.reduce(coords, grid_coords, fn point, acc ->
-          Map.replace!(acc, point, @ship_value)
-        end)
-
+    @spec mark_coords(__MODULE__.t(), Game.plain_coords(), :ship) :: __MODULE__.t()
+    def mark_coords(grid = %__MODULE__{coords: grid_coords}, point, :ship) do
+      new_grid_coords = Map.replace!(grid_coords, point, @ship_value)
       %__MODULE__{grid | coords: new_grid_coords}
     end
 
-    @spec ship_placed?(__MODULE__.t(), {non_neg_integer, non_neg_integer}) :: boolean
+    def mark_coords(grid = %__MODULE__{coords: grid_coords}, point, :hit) do
+      new_grid_coords = Map.replace!(grid_coords, point, @hit_value)
+      %__MODULE__{grid | coords: new_grid_coords}
+    end
+
+    def mark_coords(grid = %__MODULE__{coords: grid_coords}, point, :miss) do
+      new_grid_coords = Map.replace!(grid_coords, point, @miss_value)
+      %__MODULE__{grid | coords: new_grid_coords}
+    end
+
+    @spec ship_placed?(__MODULE__.t(), Game.plain_coords()) :: boolean
     def ship_placed?(%__MODULE__{coords: grid_cords}, coords) do
-      Map.fetch!(grid_cords, coords) == @ship_value
+      value = Map.fetch!(grid_cords, coords)
+      value == @ship_value || value == @hit_value
+    end
+
+    @spec hits_num(__MODULE__.t()) :: integer
+    def hits_num(%__MODULE__{coords: grid_cords}) do
+      grid_cords
+      |> Map.values()
+      |> Enum.count(&(&1 == @hit_value))
     end
   end
 
@@ -83,7 +101,7 @@ defmodule Battleships.Game.Board do
       length(prev_ships) == length(@ships) ->
         {:error, :all_ships_ready}
 
-      ship_placed?(prev_ships, ship) ->
+      ship_already_placed?(prev_ships, ship) ->
         {:error, :ship_already_placed}
 
       invalid_coords?(ship) ->
@@ -94,17 +112,18 @@ defmodule Battleships.Game.Board do
 
       true ->
         ship_coords = Ship.coords(ship)
-        new_grid = Grid.mark_coords(prev_grid, ship_coords, :ship)
+        new_grid = Enum.reduce(ship_coords, prev_grid, &Grid.mark_coords(&2, &1, :ship))
 
         {:ok, %__MODULE__{board | ships: [ship | prev_ships], grid: new_grid}}
     end
   end
 
-  defp ship_placed?(ships, %Ship{size: size}) when size in [5, 4, 3] do
+  defp ship_already_placed?(ships, %Ship{size: size}) when size in [5, 4, 3] do
     Enum.any?(ships, &(&1.size == size))
   end
 
-  defp ship_placed?(ships, %Ship{size: size}), do: Enum.count(ships, &(&1.size == size)) == 2
+  defp ship_already_placed?(ships, %Ship{size: size}),
+    do: Enum.count(ships, &(&1.size == size)) == 2
 
   # That could be tested on ship level, but as map size could be dynamic in future, I'll leave it here.
   defp invalid_coords?(ship) do
@@ -113,5 +132,24 @@ defmodule Battleships.Game.Board do
 
   defp overlapping_ships?(grid, ship) do
     Ship.coords(ship) |> Enum.any?(&Grid.ship_placed?(grid, &1))
+  end
+
+  @spec shot(__MODULE__.t(), Game.plain_coords()) :: __MODULE__.t()
+  def shot(board = %__MODULE__{grid: grid}, coords) do
+    if Grid.ship_placed?(grid, coords) do
+      new_grid = Grid.mark_coords(grid, coords, :hit)
+      %__MODULE__{board | grid: new_grid}
+    else
+      new_grid = Grid.mark_coords(grid, coords, :miss)
+      %__MODULE__{board | grid: new_grid}
+    end
+  end
+
+  @spec defeated?(__MODULE__.t()) :: boolean
+  def defeated?(board) do
+    hit_points = board.ships |> Enum.map(& &1.size) |> Enum.sum()
+    hits = board.grid |> Grid.hits_num()
+
+    hits >= hit_points
   end
 end

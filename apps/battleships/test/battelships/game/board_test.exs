@@ -92,4 +92,67 @@ defmodule Battleships.Game.BoardTest do
       assert {:error, :ship_already_placed_on_coords} == Board.add_ship(board, ship)
     end
   end
+
+  describe "shot/2" do
+    setup do
+      ship = Ship.init(1, 1, 2, :vertical)
+      {:ok, board} = Board.init("game_1", "player_1") |> Board.add_ship(ship)
+
+      {:ok, %{board: board}}
+    end
+
+    test "marks a filed as * when hitted", %{board: board} do
+      point = {1, 1}
+      %Board{grid: grid} = Board.shot(board, {1, 1})
+      grid_coords = grid.coords
+
+      assert "*" == Map.fetch!(grid_coords, point)
+    end
+
+    test "marks a filed as 0 when missed", %{board: board} do
+      point = {2, 2}
+      %Board{grid: grid} = Board.shot(board, {2, 2})
+      grid_coords = grid.coords
+
+      assert "0" == Map.fetch!(grid_coords, point)
+    end
+
+    test "leaves field as * when hitted twice", %{board: board} do
+      point = {1, 1}
+
+      %Board{grid: grid} = board |> Board.shot(point) |> Board.shot(point)
+      grid_coords = grid.coords
+
+      assert "*" == Map.fetch!(grid_coords, point)
+    end
+  end
+
+  describe "defeated?1" do
+    setup do
+      ship = Ship.init(1, 1, 2, :vertical)
+      {:ok, board} = Board.init("game_1", "player_1") |> Board.add_ship(ship)
+
+      {:ok, %{board: board}}
+    end
+
+    test "returns true once all ships has been destroyed", %{board: board} do
+      new_board = board |> Board.shot({1, 1}) |> Board.shot({2, 1})
+
+      assert Board.defeated?(new_board)
+    end
+
+    test "returns false once some ships are still floating", %{board: board} do
+      new_board = board |> Board.shot({1, 1})
+
+      refute Board.defeated?(new_board)
+    end
+
+    test "returns result when multiple ships placed", %{board: board} do
+      ship = Ship.init(2, 2, 1, :vertical)
+      {:ok, board} = Board.add_ship(board, ship)
+      new_board = board |> Board.shot({1, 1}) |> Board.shot({2, 1}) |> Board.shot({2, 2})
+
+      assert Board.defeated?(new_board)
+    end
+  end
 end
