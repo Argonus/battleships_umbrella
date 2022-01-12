@@ -152,6 +152,10 @@ defmodule Battleships.Game.Board do
     end
   end
 
+  @spec ready?(__MODULE__.t()) :: boolean
+  def ready?(%__MODULE__{state: :ready}), do: true
+  def ready?(_), do: false
+
   @spec defeated?(__MODULE__.t()) :: boolean
   def defeated?(board) do
     hit_points = board.ships |> Enum.map(& &1.size) |> Enum.sum()

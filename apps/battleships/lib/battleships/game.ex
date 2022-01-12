@@ -52,21 +52,33 @@ defmodule Battleships.Game do
   @type add_ship_errors :: :board_not_found | :battle_not_found | Board.add_ship_errors()
   @spec add_ship(String.t(), String.t(), plain_coords, integer, orientation()) :: {:ok, Board.t()}
   def add_ship(battle_id, player_id, {x, y}, ship_size, ship_orientation) do
-    with {:battle, {:ok, _battle}} <- {:battle, battle_repository().get_battle(battle_id)},
+    with {:battle, {:ok, battle}} <- {:battle, battle_repository().get_battle(battle_id)},
          {:board, {:ok, board}} <- {:board, board_repository().get_board(battle_id, player_id)},
          ship <- Ship.init(x, y, ship_size, ship_orientation),
-         {:ship_board, {:ok, board_with_ship}} <- {:ship_board, Board.add_ship(board, ship)},
-         {:board, {:ok, updated_board}} <-
-           {:board, board_repository().update_board(board_with_ship)} do
-      #      if updated_board.state == :ready && enemy_board.state == :ready do
-      #        # Update battle state
-      #      end
+         {:ship_board, {:ok, board_with_ship}} <- {:ship_board, Board.add_ship(board, ship)} do
+      {:ok, updated_board} = board_repository().update_board(board_with_ship)
+
+      if Board.ready?(updated_board) && enemy_ready?(battle, updated_board) do
+        updated_battle = Battle.set_ongoing(battle)
+        battle_repository().update_battle(updated_battle)
+      end
 
       {:ok, updated_board}
     else
       {:battle, {:error, :not_found}} -> {:error, :battle_not_found}
       {:board, {:error, :not_found}} -> {:error, :board_not_found}
       {:ship_board, {:error, error}} -> {:error, error}
+    end
+  end
+
+  defp enemy_ready?(battle, %Board{player_id: player_id}) do
+    case enemy_player_id(battle, player_id) do
+      nil ->
+        false
+
+      enemy_id ->
+        {:ok, board} = board_repository().get_board(battle.battle_id, enemy_id)
+        Board.ready?(board)
     end
   end
 
@@ -83,11 +95,16 @@ defmodule Battleships.Game do
          {:board, {:ok, enemy_board}} <-
            {:board, board_repository().get_board(battle_id, enemy_id)},
          {:board, hitted_enemy_board} <- {:board, Board.shot(enemy_board, hit_coords)},
-         {:board, {:ok, _updated_enemy_board}} <-
-           {:board, board_repository().update_board(hitted_enemy_board)},
-         {:battle, next_turn_battle} <- {:battle, Battle.next_turn(battle)},
-         {:battle, {:ok, updated_battle}} <-
-           {:battle, battle_repository().update_battle(next_turn_battle)} do
+         {:board, {:ok, updated_enemy_board}} <-
+           {:board, board_repository().update_board(hitted_enemy_board)} do
+      battle_to_update =
+        if Board.defeated?(updated_enemy_board) do
+          Battle.set_finished(battle, player_id)
+        else
+          Battle.next_turn(battle)
+        end
+
+      {:ok, updated_battle} = battle_repository().update_battle(battle_to_update)
       {:ok, updated_battle}
     else
       {:battle, {:error, :not_found}} -> {:error, :battle_not_found}

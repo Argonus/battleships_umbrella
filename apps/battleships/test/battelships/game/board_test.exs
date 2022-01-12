@@ -138,6 +138,21 @@ defmodule Battleships.Game.BoardTest do
     end
   end
 
+  describe "ready?" do
+    test "returns true when board is ready" do
+      board = Board.init("game_1", "player_1")
+      ready_board = %Board{board | state: :ready}
+
+      assert Board.ready?(ready_board)
+    end
+
+    test "returns false when board is not ready" do
+      board = Board.init("game_1", "player_1")
+
+      refute Board.ready?(board)
+    end
+  end
+
   describe "defeated?1" do
     setup do
       ship = Ship.init(1, 1, 2, :vertical)

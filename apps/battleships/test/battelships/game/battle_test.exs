@@ -73,4 +73,23 @@ defmodule Battleships.Game.BattleTest do
       end
     end
   end
+
+  describe "set_ongoing/1" do
+    test "changes status to ongoing" do
+      battle = Battle.init("battle-1", "player-1")
+      updated_battle = Battle.set_ongoing(battle)
+
+      assert updated_battle.state == :ongoing
+    end
+  end
+
+  describe "set_finished/1" do
+    test "changes status to finished" do
+      battle = Battle.init("battle-1", "player-1")
+      updated_battle = Battle.set_finished(battle, "player-1")
+
+      assert updated_battle.state == :finished
+      assert updated_battle.winner == :player_one
+    end
+  end
 end

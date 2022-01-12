@@ -36,6 +36,7 @@ defmodule Battleships.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:hammox, "~> 0.5", only: :test},
       {:phoenix_pubsub, "~> 2.0"}
     ]
   end

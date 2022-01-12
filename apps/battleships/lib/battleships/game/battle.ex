@@ -49,4 +49,20 @@ defmodule Battleships.Game.Battle do
 
   defp toggle_player(battle = %__MODULE__{active_player: :player_two}),
     do: %__MODULE__{battle | active_player: :player_one}
+
+  @spec set_ongoing(__MODULE__.t()) :: __MODULE__.t()
+  def set_ongoing(battle), do: %__MODULE__{battle | state: :ongoing}
+
+  @spec set_finished(__MODULE__.t(), String.t()) :: __MODULE__.t()
+  def set_finished(battle, winner_id) do
+    winner = get_winner_atom(battle, winner_id)
+
+    battle
+    |> increment_turn()
+    |> Map.replace(:state, :finished)
+    |> Map.replace(:winner, winner)
+  end
+
+  def get_winner_atom(%__MODULE__{player_one_id: winner_id}, winner_id), do: :player_one
+  def get_winner_atom(%__MODULE__{player_two_id: winner_id}, winner_id), do: :player_two
 end

@@ -143,6 +143,41 @@ defmodule Battleships.Game.GameTest do
       assert updated_board == board_with_ship
     end
 
+    test "once both boards are ready updates state to ongoing" do
+      battle_id = "battle_id"
+      player_one_id = "player_one_id"
+      player_two_id = "player_two_id"
+      ship = Ship.init(3, 3, 1, :vertical)
+      init_ship = Ship.init(1, 1, 1, :vertical)
+
+      init_battle = Battle.init(battle_id, player_one_id)
+      battle_with_players = %Battle{init_battle | player_two_id: player_two_id}
+      ongoing_battle = Battle.set_ongoing(battle_with_players)
+
+      init_board_one = Board.init(battle_id, player_one_id)
+
+      init_board_one_with_ships = %Board{
+        init_board_one
+        | ships: [ship, ship, ship, ship, ship, ship]
+      }
+
+      {:ok, board_one_with_ship} = Board.add_ship(init_board_one_with_ships, init_ship)
+      ready_board_one = %Board{board_one_with_ship | state: :ready}
+
+      init_board_two = Board.init(battle_id, player_two_id)
+      read_board_two = %Board{init_board_two | state: :ready}
+
+      expect_get_battle(battle_id, {:ok, battle_with_players})
+      expect_get_board(battle_id, player_one_id, {:ok, init_board_one_with_ships})
+      expect_update_board(ready_board_one, {:ok, ready_board_one})
+      expect_get_board(battle_id, player_two_id, {:ok, read_board_two})
+      expect_update_battle(ongoing_battle, {:ok, ongoing_battle})
+
+      {:ok, updated_board} = Game.add_ship(battle_id, player_one_id, {1, 1}, 1, :vertical)
+
+      assert updated_board == ready_board_one
+    end
+
     test "returns error when battle not found" do
       battle_id = "battle_id"
       player_id = "player_id"
@@ -186,17 +221,19 @@ defmodule Battleships.Game.GameTest do
       battle_id = "battle_id"
       player_one_id = "player_one_id"
       player_two_id = "player_two_id"
+      ship = Ship.init(2, 2, 2, :vertical)
 
       init_battle = Battle.init(battle_id, player_one_id)
       {:ok, updated_battle} = Battle.add_player(init_battle, player_two_id)
       player_two_board = Board.init(battle_id, player_two_id)
+      {:ok, player_two_board_with_ship} = Board.add_ship(player_two_board, ship)
 
       ongoing_battle = %Battle{updated_battle | state: :ongoing}
-      hitted_board = Board.shot(player_two_board, {1, 1})
+      hitted_board = Board.shot(player_two_board_with_ship, {1, 1})
       next_turn_battle = Battle.next_turn(ongoing_battle)
 
       expect_get_battle(battle_id, {:ok, ongoing_battle})
-      expect_get_board(battle_id, player_two_id, {:ok, player_two_board})
+      expect_get_board(battle_id, player_two_id, {:ok, player_two_board_with_ship})
       expect_update_board(hitted_board, {:ok, hitted_board})
       expect_update_battle(next_turn_battle, {:ok, next_turn_battle})
 
