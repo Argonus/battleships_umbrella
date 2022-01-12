@@ -3,6 +3,8 @@ defmodule Battleships.Game.BoardRepository do
   ETS based board repository
   """
   use GenServer
+  @behaviour Battleships.Game.BoardRepositoryBehaviour
+  alias Battleships.Game.BoardRepositoryBehaviour
 
   alias Battleships.Game.Board
 
@@ -15,17 +17,17 @@ defmodule Battleships.Game.BoardRepository do
     GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  @spec create_board(Board.t()) :: {:ok, Board.t()} | {:error, :already_exists}
+  @impl BoardRepositoryBehaviour
   def create_board(board = %Board{}) do
     GenServer.call(__MODULE__, {:create_board, board})
   end
 
-  @spec update_board(Board.t()) :: {:ok, Board.t()} | {:error, :not_found}
+  @impl BoardRepositoryBehaviour
   def update_board(board) do
     GenServer.call(__MODULE__, {:update_board, board})
   end
 
-  @spec get_board(String.t(), String.t()) :: {:ok, Board.t()} | {:error, :not_found}
+  @impl BoardRepositoryBehaviour
   def get_board(battle_id, player_id) do
     battle_id
     |> board_id(player_id)
@@ -36,13 +38,13 @@ defmodule Battleships.Game.BoardRepository do
   ### Callbacks ###
   #################
 
-  @impl true
+  @impl GenServer
   def init(_init_args) do
     board_repository = :ets.new(:board_repository, [:named_table, read_concurrency: true])
     {:ok, %{repository: board_repository}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:create_board, board}, _from, state) do
     board_id = board_id(board.battle_id, board.player_id)
 
@@ -56,7 +58,7 @@ defmodule Battleships.Game.BoardRepository do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update_board, board}, _from, state) do
     board_id = board_id(board.battle_id, board.player_id)
 

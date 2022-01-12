@@ -3,10 +3,11 @@ defmodule Battleships.Game.Ship do
   Represents a ship
   """
 
+  alias Battleships.Game
+
   defstruct [:x, :y, :size, :orientation]
 
   @type orientation :: :vertical | :horizontal
-  @type coords :: {non_neg_integer, non_neg_integer}
 
   @type t :: %__MODULE__{
           x: integer,
@@ -26,7 +27,7 @@ defmodule Battleships.Game.Ship do
     }
   end
 
-  @spec coords(__MODULE__.t()) :: [coords]
+  @spec coords(__MODULE__.t()) :: [Game.plain_coords()]
   def coords(%__MODULE__{x: x, y: y, size: size, orientation: :vertical}),
     do: Enum.map(0..(size - 1), &{x + &1, y})
 

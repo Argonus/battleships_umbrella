@@ -38,6 +38,17 @@ defmodule Battleships.Game.BoardTest do
       assert ">" == Map.fetch!(new_board.grid.coords, {2, 1})
     end
 
+    test "marks board as ready once all ships are placed", %{board: board} do
+      ship = Ship.init(1, 1, 1, :vertical)
+      new_ship = Ship.init(2, 2, 1, :vertical)
+
+      board = %Board{board | ships: [ship, ship, ship, ship, ship, ship]}
+      {:ok, new_board} = Board.add_ship(board, new_ship)
+
+      assert Enum.member?(new_board.ships, new_ship)
+      assert new_board.state == :ready
+    end
+
     test "allows to add a many ships to board", %{board: board} do
       ship_1 = Ship.init(1, 1, 1, :vertical)
       ship_2 = Ship.init(2, 2, 1, :vertical)

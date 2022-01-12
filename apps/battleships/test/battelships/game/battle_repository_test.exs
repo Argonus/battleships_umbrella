@@ -40,7 +40,7 @@ defmodule Battleships.Game.BattleRepositoryTest do
       battle = Battle.init("battle_4", "player_4")
       {:ok, _battle} = BattleRepository.create_battle(battle)
 
-      updated_battle = %Battle{battle | turn: 10000}
+      updated_battle = %Battle{battle | turn: 10_000}
 
       assert {:ok, updated_battle} == BattleRepository.update_battle(updated_battle)
     end

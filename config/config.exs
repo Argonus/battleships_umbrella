@@ -9,6 +9,10 @@
 # move said applications out of the umbrella.
 import Config
 
+config :battleships,
+  battle_repository: Battleships.Game.BattleRepository,
+  board_repository: Battleships.Game.BoardRepository
+
 config :battleships_web,
   generators: [context_app: :battleships]
 

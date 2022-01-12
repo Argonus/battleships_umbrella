@@ -3,7 +3,9 @@ defmodule Battleships.Game.BattleRepository do
   ETS based battle repository
   """
   use GenServer
-  alias Battleships.Game.Battle
+  @behaviour Battleships.Game.BattleRepositoryBehaviour
+
+  alias Battleships.Game.BattleRepositoryBehaviour
 
   ##################
   ### Client API ###
@@ -14,17 +16,17 @@ defmodule Battleships.Game.BattleRepository do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
-  @spec create_battle(Battle.t()) :: {:ok, Battle.t()} | {:error, :already_exists}
+  @impl BattleRepositoryBehaviour
   def create_battle(battle) do
     GenServer.call(__MODULE__, {:create_battle, battle})
   end
 
-  @spec get_battle(String.t()) :: {:ok, Battle.t()} | {:error, :not_found}
+  @impl BattleRepositoryBehaviour
   def get_battle(battle_id) do
     get_battle_by_id(battle_id)
   end
 
-  @spec update_battle(Battle.t()) :: {:ok, Battle.t()} | {:error, :not_found}
+  @impl BattleRepositoryBehaviour
   def update_battle(battle) do
     GenServer.call(__MODULE__, {:update_battle, battle})
   end
@@ -33,13 +35,13 @@ defmodule Battleships.Game.BattleRepository do
   ### Callbacks ###
   #################
 
-  @impl true
+  @impl GenServer
   def init(_args) do
     board_repository = :ets.new(:battle_repository, [:named_table, read_concurrency: true])
     {:ok, %{repository: board_repository}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:create_battle, battle}, _from, state) do
     case get_battle_by_id(battle.battle_id) do
       {:error, :not_found} ->
@@ -51,7 +53,7 @@ defmodule Battleships.Game.BattleRepository do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:update_battle, battle}, _from, state) do
     case get_battle_by_id(battle.battle_id) do
       {:error, :not_found} ->

@@ -35,7 +35,9 @@ defmodule Battleships.Game.Board do
       %__MODULE__{coords: coords}
     end
 
-    @spec mark_coords(__MODULE__.t(), Game.plain_coords(), :ship) :: __MODULE__.t()
+    @type coords_mutations :: :ship | :hit | :miss
+
+    @spec mark_coords(__MODULE__.t(), Game.plain_coords(), coords_mutations) :: __MODULE__.t()
     def mark_coords(grid = %__MODULE__{coords: grid_coords}, point, :ship) do
       new_grid_coords = Map.replace!(grid_coords, point, @ship_value)
       %__MODULE__{grid | coords: new_grid_coords}
@@ -70,7 +72,7 @@ defmodule Battleships.Game.Board do
 
   defstruct [:battle_id, :player_id, :grid, :ships, :state]
 
-  @type state :: :initial | :ongoing
+  @type state :: :initial | :ready
   @type t :: %__MODULE__{
           player_id: String.t(),
           battle_id: String.t(),
@@ -98,7 +100,7 @@ defmodule Battleships.Game.Board do
   @spec add_ship(__MODULE__.t(), Ship.t()) :: {:ok, __MODULE__.t()} | {:error, add_ship_errors}
   def add_ship(board = %__MODULE__{ships: prev_ships, grid: prev_grid}, ship) do
     cond do
-      length(prev_ships) == length(@ships) ->
+      all_ships_placed?(prev_ships) ->
         {:error, :all_ships_ready}
 
       ship_already_placed?(prev_ships, ship) ->
@@ -113,10 +115,15 @@ defmodule Battleships.Game.Board do
       true ->
         ship_coords = Ship.coords(ship)
         new_grid = Enum.reduce(ship_coords, prev_grid, &Grid.mark_coords(&2, &1, :ship))
+        new_ships = [ship | prev_ships]
+        new_state = if all_ships_placed?(new_ships), do: :ready, else: board.state
 
-        {:ok, %__MODULE__{board | ships: [ship | prev_ships], grid: new_grid}}
+        {:ok, %__MODULE__{board | ships: new_ships, grid: new_grid, state: new_state}}
     end
   end
+
+  defp all_ships_placed?(ships) when length(ships) == length(@ships), do: true
+  defp all_ships_placed?(_), do: false
 
   defp ship_already_placed?(ships, %Ship{size: size}) when size in [5, 4, 3] do
     Enum.any?(ships, &(&1.size == size))
