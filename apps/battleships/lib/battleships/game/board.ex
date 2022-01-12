@@ -68,21 +68,21 @@ defmodule Battleships.Game.Board do
   @size 10
   @ships [5, 4, 3, 2, 2, 1, 1]
 
-  defstruct [:game_id, :player_id, :grid, :ships, :state]
+  defstruct [:battle_id, :player_id, :grid, :ships, :state]
 
   @type state :: :initial | :ongoing
   @type t :: %__MODULE__{
           player_id: String.t(),
-          game_id: String.t(),
+          battle_id: String.t(),
           grid: Grid.t(),
           ships: [Ship.t()],
           state: state
         }
 
   @spec init(String.t(), String.t()) :: __MODULE__.t()
-  def init(game_id, player_id) do
+  def init(battle_id, player_id) do
     %__MODULE__{
-      game_id: game_id,
+      battle_id: battle_id,
       player_id: player_id,
       grid: Grid.init(@size),
       ships: [],

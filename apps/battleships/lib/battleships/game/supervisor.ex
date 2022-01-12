@@ -11,6 +11,7 @@ defmodule Battleships.Game.Supervisor do
 
   def init(_args) do
     children = [
+      Battleships.Game.BattleRepository,
       Battleships.Game.BoardRepository
     ]
 

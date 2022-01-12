@@ -15,9 +15,9 @@ defmodule Battleships.Game.BoardRepository do
     GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  @spec add_board(Board.t()) :: {:ok, Board.t()} | {:error, :already_exists}
-  def add_board(board = %Board{}) do
-    GenServer.call(__MODULE__, {:add_board, board})
+  @spec create_board(Board.t()) :: {:ok, Board.t()} | {:error, :already_exists}
+  def create_board(board = %Board{}) do
+    GenServer.call(__MODULE__, {:create_board, board})
   end
 
   @spec update_board(Board.t()) :: {:ok, Board.t()} | {:error, :not_found}
@@ -26,8 +26,8 @@ defmodule Battleships.Game.BoardRepository do
   end
 
   @spec get_board(String.t(), String.t()) :: {:ok, Board.t()} | {:error, :not_found}
-  def get_board(game_id, player_id) do
-    game_id
+  def get_board(battle_id, player_id) do
+    battle_id
     |> board_id(player_id)
     |> get_board_by_id()
   end
@@ -36,17 +36,19 @@ defmodule Battleships.Game.BoardRepository do
   ### Callbacks ###
   #################
 
+  @impl true
   def init(_init_args) do
     board_repository = :ets.new(:board_repository, [:named_table, read_concurrency: true])
     {:ok, %{repository: board_repository}}
   end
 
-  def handle_call({:add_board, board}, _from, state) do
-    board_id = board_id(board.game_id, board.player_id)
+  @impl true
+  def handle_call({:create_board, board}, _from, state) do
+    board_id = board_id(board.battle_id, board.player_id)
 
     case get_board_by_id(board_id) do
       {:error, :not_found} ->
-        :ets.insert(:board_repository, {board_id, board})
+        insert_or_update_board(board_id, board)
         {:reply, {:ok, board}, state}
 
       {:ok, _board} ->
@@ -54,15 +56,16 @@ defmodule Battleships.Game.BoardRepository do
     end
   end
 
+  @impl true
   def handle_call({:update_board, board}, _from, state) do
-    board_id = board_id(board.game_id, board.player_id)
+    board_id = board_id(board.battle_id, board.player_id)
 
     case get_board_by_id(board_id) do
       {:error, :not_found} ->
         {:reply, {:error, :not_found}, state}
 
       {:ok, _board} ->
-        :ets.insert(:board_repository, {board_id, board})
+        insert_or_update_board(board_id, board)
         {:reply, {:ok, board}, state}
     end
   end
@@ -71,6 +74,10 @@ defmodule Battleships.Game.BoardRepository do
   ### Helper Functions ###
   ########################
 
+  def insert_or_update_board(board_id, board) do
+    :ets.insert(:board_repository, {board_id, board})
+  end
+
   defp get_board_by_id(board_id) do
     case :ets.lookup(:board_repository, board_id) do
       [] -> {:error, :not_found}
@@ -78,7 +85,7 @@ defmodule Battleships.Game.BoardRepository do
     end
   end
 
-  defp board_id(game_id, player_id) do
-    String.to_atom("#{game_id}-#{player_id}")
+  defp board_id(battle_id, player_id) do
+    String.to_atom("#{battle_id}-#{player_id}")
   end
 end

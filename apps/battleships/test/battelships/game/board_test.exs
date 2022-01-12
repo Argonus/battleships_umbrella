@@ -11,7 +11,7 @@ defmodule Battleships.Game.BoardTest do
       %Grid{coords: grid_coords} = board.grid
 
       # assert board
-      assert "game_1" == board.game_id
+      assert "game_1" == board.battle_id
       assert "player_1" == board.player_id
       assert :initial == board.state
 
