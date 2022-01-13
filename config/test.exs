@@ -1,5 +1,9 @@
 import Config
 
+config :battleships,
+  battle_repository: BattleRepositoryMock,
+  board_repository: BoardRepositoryMock
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :battleships_web, BattleshipsWeb.Endpoint,
