@@ -221,7 +221,7 @@ defmodule Battleships.SingleBattleTest do
     assert battle_step_eight.winner == :player_one
 
     # [WHEN] Player two shots
-    result = Game.play_turn(battle_id, player_two_id, {1,1})
+    result = Game.play_turn(battle_id, player_two_id, {1, 1})
 
     # [THEN] Match is already finished
     assert {:error, :battle_already_finished} == result
